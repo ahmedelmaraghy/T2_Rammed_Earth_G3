@@ -46,7 +46,7 @@ class GlobalDesign(object):
         design = cls(layers, name)
 
         return design
-
+    
     def design_from_curve_legacy(self, curve, h_spacing, height, default_layer_height = 40):
         """single layer curve extrusion structure"""
 
