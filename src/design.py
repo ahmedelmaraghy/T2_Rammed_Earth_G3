@@ -52,40 +52,46 @@ class GlobalDesign(object):
        
         #get a bounding box
         column_bbx = column.GetBoundingBox(True)
-        #print type(column_bbx)
+        print (type(column_bbx))
 
         #start point and end point of contour
         Contour_StartPt = rg.BoundingBox.PointAt(column_bbx, 0,0,0)
         Contour_EndPt = rg.BoundingBox.PointAt(column_bbx, 0,0,1)
         #getting contour curves
         Contours = rg.Brep.CreateContourCurves(column, Contour_StartPt, Contour_EndPt, Layer_height)
-       
+        
+        all_shots = []
         StartPts = []
         Pt_tree = []
         Contour_bbxs = []
         layers = []
         for i,Contour in enumerate(Contours):
-            Contour_bbx = Contour.GetBoundingBox(True)
             Contour.Domain = rg.Interval(0,1)
             Start_t = i*SeamRotate
             Start_pt = rg.Curve.ChangeClosedCurveSeam(Contour,Start_t)
             StartPt = rg.Curve.PointAt(Contour, Start_t)
             DivideNum = int(rg.Curve.GetLength(Contour)/Unit_width)
             StartPts.append(StartPt)
-            Contour_bbxs.append(Contour_bbx)
             shots = []
+            
             for j in range(DivideNum):
-                shot = rg.Curve.PointAt(Contour, Start_t+j/DivideNum)
+                shot = rg.Curve.PointAt(Contour, Start_t + j/float(DivideNum))
+                if i == 0:
+                    print
+                    print(j)
+                    print (j/DivideNum)
                 shots.append(shot)
+            #print (len(shots))
 
-            path = [Part(shot, index) for index, shot in enumerate(shots)]
+            path = [Part(shots[index], index) for index in range(len(shots))]
+            #print (len(path))
             paths = [Path(path,0)]
             #Pt_tree.append(shots)
             layers.append(Layer(paths, i))
-
+            all_shots.append(shots)
         
         design = cls(layers, name)
-        return design
+        return design, all_shots
 
 
     def design_from_curve_legacy(self, curve, h_spacing, height, default_layer_height = 40):
