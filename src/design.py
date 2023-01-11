@@ -47,6 +47,47 @@ class GlobalDesign(object):
 
         return design
     
+    @classmethod
+    def design_from_curve2(cls, column, Layer_height, Unit_width, SeamRotate, name = "defaultName"):
+       
+        #get a bounding box
+        column_bbx = column.GetBoundingBox(True)
+        #print type(column_bbx)
+
+        #start point and end point of contour
+        Contour_StartPt = rg.BoundingBox.PointAt(column_bbx, 0,0,0)
+        Contour_EndPt = rg.BoundingBox.PointAt(column_bbx, 0,0,1)
+        #getting contour curves
+        Contours = rg.Brep.CreateContourCurves(column, Contour_StartPt, Contour_EndPt, Layer_height)
+       
+        StartPts = []
+        Pt_tree = []
+        Contour_bbxs = []
+        layers = []
+        for i,Contour in enumerate(Contours):
+            Contour_bbx = Contour.GetBoundingBox(True)
+            Contour.Domain = rg.Interval(0,1)
+            Start_t = i*SeamRotate
+            Start_pt = rg.Curve.ChangeClosedCurveSeam(Contour,Start_t)
+            StartPt = rg.Curve.PointAt(Contour, Start_t)
+            DivideNum = int(rg.Curve.GetLength(Contour)/Unit_width)
+            StartPts.append(StartPt)
+            Contour_bbxs.append(Contour_bbx)
+            shots = []
+            for j in range(DivideNum):
+                shot = rg.Curve.PointAt(Contour, Start_t+j/DivideNum)
+                shots.append(shot)
+
+            path = [Part(shot, index) for index, shot in enumerate(shots)]
+            paths = [Path(path,0)]
+            #Pt_tree.append(shots)
+            layers.append(Layer(paths, i))
+
+        
+        design = cls(layers, name)
+        return design
+
+
     def design_from_curve_legacy(self, curve, h_spacing, height, default_layer_height = 40):
         """single layer curve extrusion structure"""
 
