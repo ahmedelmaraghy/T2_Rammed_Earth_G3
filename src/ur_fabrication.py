@@ -47,10 +47,28 @@ class UR(object):
             robot_plane = rhino_to_robotbase(pl,self.robot_base)
             self.robot_frames.append(robot_plane)
 
-    def prepare_script(self):
+    #def prepare_script(self):
+    #    self.rhino_planes_to_robot_planes()
+    #    for i,(pl, toggle, wait) in enumerate(zip(self.robot_frames, self.toggles, self.wait_times)):
+    #        self.script += move_l(pl,MAX_ACCEL, MAX_VELOCITY)
+    #        self.script += sleep(0.5)
+    #        if toggle:
+    #            self.script += set_digital_out(0,True)
+    #            self.script += sleep(wait)
+    #            self.script += set_digital_out(0,False)
+    #        if i%5 == 0:
+    #            self.script += textmsg('Pt : %d' %i)
+
+    def prepare_script(self, lift_height):
         self.rhino_planes_to_robot_planes()
-        for i,(pl, toggle, wait) in enumerate(zip(self.robot_frames, self.toggles, self.wait_times)):
-            self.script += move_l(pl,MAX_ACCEL, MAX_VELOCITY)
+        self.lift_planes_z(lift_height)
+        for i,(pl,toggle, wait) in enumerate(zip(self.robot_frames, self.toggles, self.wait_times)):
+            SAFE_DIST = 10
+            safe_pl = pl.Clone()
+            safe_pl.Translate(rg.Vector3d.ZAxis*SAFE_DIST)
+            # add to the path: go to the safe plane
+            self.script += move_l(safe_pl, MAX_ACCEL, MAX_VELOCITY)
+            self.script += move_l(pl, MAX_ACCEL, MAX_VELOCITY)
             self.script += sleep(0.5)
             if toggle:
                 self.script += set_digital_out(0,True)
@@ -58,6 +76,8 @@ class UR(object):
                 self.script += set_digital_out(0,False)
             if i%5 == 0:
                 self.script += textmsg('Pt : %d' %i)
+            # add to the path: go to the safe plane
+            self.script += move_l(safe_pl, MAX_ACCEL, MAX_VELOCITY)
     
     
     def trigger(self):
