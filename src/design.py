@@ -94,6 +94,25 @@ class GlobalDesign(object):
         return design, all_shots
 
 
+    @classmethod
+    def design_from_curve3(cls, pts, h_spacing, height, default_layer_height = 40, name = "defaultName"):
+        layers = []
+        for index,ptList in enumerate(pts.Branches):
+            #since only one path on each layer path index : 0
+            path = []
+            for i,pt in enumerate(ptList):
+                path.append(Part(pt, i))
+
+
+            paths = [Path(path,0)]
+            layers.append(Layer(paths, index))
+
+        design = cls(layers, name)
+
+        return design
+
+
+
     def design_from_curve_legacy(self, curve, h_spacing, height, default_layer_height = 40):
         """single layer curve extrusion structure"""
 
