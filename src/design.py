@@ -27,7 +27,7 @@ class GlobalDesign(object):
                     part.generate_uid(layer.index, path.index)
 
     @classmethod
-    def design_from_curve(cls, curve, h_spacing, height, default_layer_height = 40, name = "defaultName"):
+    def design_from_single_curve(cls, curve, h_spacing, height, default_layer_height = 40, name = "defaultName"):
         ts = curve.DivideByCount(int(round(curve.GetLength()/h_spacing*2)), True)
 
         flip_alternating = True if not curve.IsClosed else False
@@ -46,9 +46,32 @@ class GlobalDesign(object):
         design = cls(layers, name)
 
         return design
-    
+
     @classmethod
-    def design_from_curve2(cls, column, Layer_height, Unit_width, SeamRotate, name = "defaultName"):
+    def design_from_multiple_curve(cls, curves, h_spacing, name = "defaultName"):
+        layers = []
+        for index,curve in enumerate(curves):
+            ts = curve.DivideByCount(int(round(curve.GetLength()/h_spacing*2)), True)
+
+            flip_alternating = True if not curve.IsClosed else False
+
+            #since only one path on each layer path index : 0
+            path = []
+            for i,t in enumerate(ts[index%2::2]):
+                path.append(Part(rg.Point3d(curve.PointAt(t).X,  curve.PointAt(t).Y,  curve.PointAt(t).Z), i))
+
+            if flip_alternating and index % 2 == 0:
+                path.reverse()
+
+            paths = [Path(path,0)]
+            layers.append(Layer(paths, index))
+
+        design = cls(layers, name)
+
+        return design
+
+    @classmethod
+    def design_from_brep(cls, column, Layer_height, Unit_width, SeamRotate, name = "defaultName"):
        
         #get a bounding box
         column_bbx = column.GetBoundingBox(True)
@@ -93,9 +116,8 @@ class GlobalDesign(object):
         design = cls(layers, name)
         return design, all_shots
 
-
     @classmethod
-    def design_from_curve3(cls, pts, h_spacing, height, default_layer_height = 40, name = "defaultName"):
+    def design_from_point(cls, pts, name = "defaultName"):
         layers = []
         for index,ptList in enumerate(pts.Branches):
             #since only one path on each layer path index : 0
