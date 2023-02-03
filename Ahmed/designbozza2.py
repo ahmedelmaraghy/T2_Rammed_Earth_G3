@@ -40,7 +40,7 @@ class ImpactLayer(object):
         self.startPairs = []
         self.endPairs = []
         self.even_or_odd = odd_even
-
+        self.impactPoints = []
         #self.endShape
 
 
@@ -80,8 +80,8 @@ class ImpactLayer(object):
             
             is_move_possible, actual_step = move_pairs_up_down(studied_pairs[-2],step,length, threshold_case_1)
             if is_move_possible: #we still have room for movement
-                pass
                 #!!!propagate the movement over all other elements
+                self.propagate_movement(actual_step, studied_pairs[-2], studied_pairs )
             else: #!!! we need to move to new config 
                 pointA = rg.Point3d(studied_pairs[-1][0].X, studied_pairs[-1][0].Y + length/2, studied_pairs[-1][0].Z)
                 pointB = rg.Point3d(studied_pairs[-1][0].X, studied_pairs[-1][0].Y - length/2, studied_pairs[-1][0].Z) 
@@ -90,7 +90,7 @@ class ImpactLayer(object):
         elif len(studied_pairs[-1]) == 2: #case 2 bricks
             is_move_possible, actual_step = move_pairs_up_down(studied_pairs[-2], step, length, threshold_case_2)
             if is_move_possible:
-                pass
+                self.propagate_movement(actual_step, studied_pairs[-2], studied_pairs )
             else:
                 #additional_move = (threshold_case_1/2.0) * 0.5 #!!!hardcoded 0.5 
                 additional_move = 0
@@ -111,6 +111,47 @@ class ImpactLayer(object):
         #if threshold reached? add 1 more pair of 1 shit and !!  
         #always propagate the addition to the rest of the particles (increment for loop for now)
 
+    def propagate_movement(self,actual_step, edging_pair, studied_pairs):
+        """propagates the movement done at the edging pair inwards towards the rest of the elements
+        """
+        #get index of the edging pair and start from them
+        stop_index = studied_pairs.index(edging_pair) 
+        division = 2
+        #iterate of the list
+        for pair in reversed(studied_pairs[:stop_index +1]):
+            step = actual_step 
+            division += 1
+            pair[0].Y += step
+            pair[1].Y -= step
+
+  
+    def adjust_points_for_fabrication(self, stop_index = -2):
+    #choose the type of adjustment but for now just add all the points incrementally
+        
+        #self.impactPoints.append(pair[0] for pair in self.startPairs[:stop_index]) 
+        for pair in self.startPairs[:stop_index]:
+            self.impactPoints.append(pair[0])
+        for pair in self.startPairs[:stop_index]:
+            self.impactPoints.append(pair[1])
+        #self.impactPoints.append(pair[1] for pair in self.startPairs[:stop_index]) weirdly enough this didnt work !!
+        for pair in self.startPairs[stop_index:]:
+            self.impactPoints.append(pair[0])
+            if len(pair) > 1:
+                self.impactPoints.append(pair[1])    
+       
+        start_index = self.even_or_odd
+        for pair in self.endPairs[start_index:stop_index]:
+            self.impactPoints.append(pair[0])
+        for pair in self.endPairs[start_index:stop_index]:
+            self.impactPoints.append(pair[1])
+        #self.impactPoints.append(pair[0] for pair in self.endPairs[start_index:stop_index]) 
+        #self.impactPoints.append(pair[1] for pair in self.endPairs[start_index:stop_index]) 
+        for pair in self.endPairs[stop_index:]:
+            self.impactPoints.append(pair[0])
+            if len(pair) > 1:
+                self.impactPoints.append(pair[1])   
+               
+
 
     def replace_last_pair_with_more(self, dir, number_last_): #in the future in case of more than 2 2 be added
         pass
@@ -120,6 +161,12 @@ class ImpactLayer(object):
             
     def move_several():
         pass
+
+
+
+
+
+
 
 def move_pairs_up_down(pair, step, length, threshold):
     actual_step = step
@@ -297,10 +344,13 @@ stSideContourPairs, endSideContourPairs, contour_pts_end , contour_pts_st = crea
 #check all points and return the non overlap points
 #contour_pts = OverlapResolutionSameLevel(contour_pts, threshold_dist,y_dir, decision = 0)
 
+all_fab_points = []
 #print ("this is shit")
 upper_layer = ImpactLayer(1)
 upper_layer.startPairs = stSideContourPairs
 upper_layer.endPairs = endSideContourPairs
+upper_layer.adjust_points_for_fabrication()
+all_fab_points.append(upper_layer.impactPoints)
 
 prev_layer = upper_layer
 all_layers = []
@@ -319,6 +369,7 @@ all_points = []
 all_points.append(upper_layer.startPairs)
 all_points.append(upper_layer.endPairs)
 
+
 for layer in all_layers:
     points_in_layer = []
     #points_in_layer.append(th.list_to_tree(pair) for pair in layer.startPairs)
@@ -327,13 +378,20 @@ for layer in all_layers:
     #all_points.append(points_in_layer) 
     all_points.append((layer.startPairs)) 
     all_points.append((layer.endPairs)) 
+    layer.adjust_points_for_fabrication()
+    all_fab_points.append(layer.impactPoints)
 
 #all_points = [th.list_to_tree(points) for points in all_points]    
 endSideContourPairs = th.list_to_tree(endSideContourPairs)
 stSideContourPairs = th.list_to_tree(stSideContourPairs)  
+all_fab_points = th.list_to_tree(all_fab_points)
 
-
-
+stop_index = 2
+my_list = [1,2,3,4,5]
+start_division = 2
+#iterate of the list
+for item in reversed(my_list[stop_index +1:]):
+    print (item)
 
 
 
